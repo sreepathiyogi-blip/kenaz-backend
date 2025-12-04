@@ -42,6 +42,25 @@ def call_perplexity(prompt, system_message="You are an expert Facebook ads analy
 def health():
     return jsonify({"status": "healthy"}), 200
 
+# Homepage route
+@app.route('/', methods=['GET'])
+def home():
+    return jsonify({
+        "service": "Kenaz AI Backend",
+        "status": "running",
+        "version": "1.0",
+        "endpoints": {
+            "health": "/health",
+            "ai_insights": "/api/ai-insights",
+            "gender_analysis": "/api/gender-analysis",
+            "product_analysis": "/api/product-analysis",
+            "creative_analysis": "/api/creative-analysis",
+            "budget_optimization": "/api/budget-optimization",
+            "audience_analysis": "/api/audience-analysis",
+            "campaign_report": "/api/campaign-report"
+        }
+    }), 200
+
 # 1. Individual Ad Analysis
 @app.route('/api/ai-insights', methods=['POST', 'OPTIONS'])
 def ai_insights():
