@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Kenaz Ad Studio – Live Ads Preview</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+/* Full stylesheet with updates */
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#0f0f0f;
+--panel:#181818;
+--muted:#888;
+--accent:#b88cff;
+--danger:#ff4d4d;
+--success:#4caf50;
+--card-radius:14px;
+--gap:14px;
+--text:#f6f6f6;
+--muted-2:#666;
+--app-scale:1;
+}
+html,body{height:100%}
+body{
+font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial;
+background:var(--bg);
+color:var(--text);
+-webkit-font-smoothing:antialiased;
+padding-bottom:40px;
+}
+#app{
+transform: scale(var(--app-scale));
+transform-origin: top left;
+width: calc(100% / var(--app-scale));
+}
+@media (max-width: 768px) {
+:root { --app-scale:1; }
+#app { transform: none; width: 100%; }
+}
+/* Header */
+.header{display:flex;align-items:center;gap:12px;padding:14px 20px;position:sticky;top:0;background:linear-gradient(180deg, rgba(0,0,0,0.6), transparent);backdrop-filter:blur(6px);z-index:40;border-bottom:1px solid #222}
+.logo{font-weight:800;color:var(--accent);font-size:1.15rem;letter-spacing:0.2px}
+.search-box{flex:1;max-width:900px;display:flex;background:#0d0d0d;border-radius:999px;border:1px solid #222;overflow:hidden;align-items:center;padding:6px}
+.search-box input{flex:1;background:transparent;border:0;color:var(--text);padding:10px 14px;font-size:.95rem;outline:none}
+.search-box button{background:var(--panel);border:0;color:var(--text);padding:8px 14px;border-radius:999px;margin-right:6px;cursor:pointer;transition:transform .2s}
+.search-box button:hover{transform:scale(1.05)}
+.header-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+.status{display:flex;align-items:center;gap:8px;background:var(--panel);padding:8px 12px;border-radius:999px;border:1px solid #242424;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--success);display:inline-block;transition:background .3s}
+.icon-btn{width:44px;height:44px;border-radius:10px;background:var(--panel);border:1px solid #222;color:var(--text);display:inline-grid;place-items:center;cursor:pointer;transition:all .18s}
+.icon-btn:hover{transform:translateY(-2px);border-color:#333}
+.sound-toggle.active{background:linear-gradient(90deg,#ffd9d9,#ffc9c9);color:#111}
+.sound-indicator{font-size:.85rem;color:var(--muted);margin-left:6px}
+
+/* Sidebar */
+.sidebar{position:fixed;right:-420px;top:0;width:420px;height:100vh;background:linear-gradient(180deg,#121212,#141414);padding:20px;border-left:1px solid #222;transition:right .26s cubic-bezier(.2,.9,.2,1);z-index:80;overflow:auto}
+.sidebar.open{right:0}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:70;display:none;backdrop-filter:blur(2px)}
+.overlay.show{display:block}
+.sidebar h3{font-size:1.05rem;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.close{background:none;border:0;color:var(--text);font-size:1.4rem;cursor:pointer;transition:transform .2s}
+.close:hover{transform:rotate(90deg)}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:.78rem;color:var(--muted);margin-bottom:6px;font-weight:700;text-transform:uppercase;letter-spacing:0.6px}
+.field input,.field textarea,.field select{width:100%;background:transparent;border:1px solid #242424;color:var(--text);padding:10px;border-radius:10px;font-size:.95rem;transition:border-color .2s}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--accent);outline:none}
+.field small{color:var(--muted-2);font-size:.78rem;margin-top:6px;display:block}
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.chip{padding:8px 12px;background:#222;border-radius:999px;border:1px solid #2b2b2b;color:var(--text);cursor:pointer;font-weight:700;transition:all .2s}
+.chip:hover{background:#2a2a2a;transform:translateY(-2px)}
+.chip.active{background:var(--accent);color:#001018}
+.btn{width:100%;padding:12px;border-radius:10px;border:0;font-weight:800;cursor:pointer;margin-top:8px;transition:all .2s}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn:not(:disabled):hover{transform:translateY(-2px)}
+.btn-red{background:var(--danger);color:#fff}
+.btn-dark{background:#222;color:var(--text)}
+
+/* Main */
+.main{max-width:1400px;margin:18px auto;padding:0 18px}
+.toolbar{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab{background:transparent;border:1px solid #242424;padding:8px 12px;border-radius:999px;color:var(--text);cursor:pointer;font-weight:700;transition:all .2s}
+.tab:hover{background:#1a1a1a;transform:translateY(-2px)}
+.tab.active{background:linear-gradient(90deg,var(--accent),#5eb3ff);color:#001018;border-color:transparent}
+.sort-box select{background:#121212;border:1px solid #242424;padding:8px 12px;border-radius:8px;color:var(--text);font-weight:700;cursor:pointer;transition:border-color .2s}
+.sort-box select:focus{border-color:var(--accent);outline:none}
+
+/* Summary */
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:18px}
+.sum-card{background:linear-gradient(135deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04));padding:14px;border-radius:12px;border:1px solid #242424;transition:transform .2s}
+.sum-card:hover{transform:translateY(-2px)}
+.sum-card .lbl{color:var(--muted);font-size:.72rem;text-transform:uppercase;letter-spacing:0.6px}
+.sum-card .val{font-weight:900;font-size:1.25rem;margin-top:6px}
+
+/* Grid/cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.card{background:linear-gradient(180deg,#151515,#0f0f0f);border-radius:var(--card-radius);overflow:hidden;border:1px solid #232323;display:flex;flex-direction:column;transition:transform .2s,box-shadow .2s}
+.card:hover{transform:translateY(-4px);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+
+/* Media display */
+.media-container{position:relative;width:100%;aspect-ratio:16/9;background:#000;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:12px 12px 0 0}
+.media-container.reel{aspect-ratio:9/16;height:auto;display:flex;align-items:center;justify-content:center;border-radius:14px}
+.media-container iframe, .media-container img, .media-container video{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;display:block;border:0;background:#000;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
+.media-container img{transition:transform .3s ease, opacity .3s ease;-webkit-user-drag: none;user-select: none;-webkit-backface-visibility: hidden;backface-visibility: hidden;will-change:transform;transform:translateZ(0)}
+.media-container:hover img{transform:scale(1.02) translateZ(0)}
+.media-container img[data-loaded="false"]{opacity:0}
+.media-container img[data-loaded="true"]{opacity:1}
+.media-container.loading{display:flex;align-items:center;justify-content:center}
+.media-container.loading::after{content:'';position:absolute;width:40px;height:40px;border:3px solid rgba(184,140,255,.2);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;z-index:5}
+@keyframes spin{to{transform:rotate(360deg)}}
+.badges{position:absolute;top:12px;left:12px;display:flex;gap:8px;align-items:center;z-index:10;pointer-events:none}
+.badge{padding:6px 10px;border-radius:8px;font-weight:800;font-size:.75rem;backdrop-filter:blur(8px)}
+.badge.roas{background:linear-gradient(90deg,#2ecc71,#20c997);color:#001214}
+.badge.spend{background:rgba(0,0,0,0.7);padding:6px 10px;border-radius:10px;color:#fff;font-weight:800;border:1px solid rgba(255,255,255,0.1)}
+.badge.platform{background:rgba(180,90,200,0.95);color:#fff;font-size:.7rem;padding:4px 8px}
+.link-badge {position:absolute;top:12px;right:12px;z-index:15;pointer-events:auto;display:flex;gap:6px;align-items:center}
+.link-badge a{display:inline-flex;align-items:center;gap:6px;padding:6px 8px;border-radius:8px;background:rgba(0,0,0,0.6);color:#fff;text-decoration:none;font-weight:800;font-size:.78rem;border:1px solid rgba(255,255,255,0.06)}
+.card .info{padding:12px;display:flex;flex-direction:column;gap:8px;flex:1}
+.ad-name{font-weight:800;line-height:1.2;font-size:.95rem;display:-webkit-box;-webkit-line-clamp:2;line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;cursor:pointer;transition:color .2s;user-select:none}
+.ad-name:hover{color:var(--accent)}
+.meta-info{display:flex;gap:8px;flex-wrap:wrap}
+.meta-tag{background:#121212;padding:6px 8px;border-radius:8px;font-size:.72rem;color:var(--muted);border:1px solid #222}
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.metric{background:#0d0d0d;padding:10px;border-radius:8px}
+.metric .label{font-size:.68rem;color:var(--muted)}
+.metric .value{font-weight:800;margin-top:6px;color:var(--accent)}
+.link-section{margin-top:auto}
+.copy-link{display:flex;gap:8px}
+.copy-link input{flex:1;background:#0d0d0d;border:1px solid #222;padding:8px;border-radius:8px;color:var(--accent);font-size:.82rem}
+.copy-link button{background:var(--accent);color:#001018;border:0;padding:8px 12px;border-radius:8px;font-weight:800;cursor:pointer;transition:transform .2s}
+.copy-link button:hover{transform:scale(1.05)}
+.video-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted-2);background:linear-gradient(90deg,#0e0e0e,#141414);position:absolute;inset:0;flex-direction:column;gap:12px}
+.video-placeholder svg{opacity:0.9}
+
+/* Modal & sidebar styles */
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:120;display:none;overflow:hidden;backdrop-filter:blur(4px)}
+.modal.show{display:block}
+.modal-container{display:flex;height:100vh;max-width:1800px;margin:0 auto;gap:0;position:relative}
+.modal-main{flex:1;display:flex;flex-direction:column;padding:20px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#333 #0a0a0a}
+.modal-main::-webkit-scrollbar{width:8px}
+.modal-main::-webkit-scrollbar-track{background:#0a0a0a}
+.modal-main::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+.modal-main::-webkit-scrollbar-thumb:hover{background:#444}
+.video-wrapper{width:100%;max-width:1500px;margin:0 auto;position: sticky;background:#000;border-radius:12px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.6)}
+.video-content{position:sticky;top: 20px;z-index: 5;width:100%;aspect-ratio: 16/9;background:#000;display:flex;align-items:center;justify-content:center}
+.video-content iframe, .video-content img{position:absolute;top:0;left:0;width:100%;height:100%;object-fit:contain;border:0;background:#000}
+.video-content img{transition:opacity .3s ease}
+.modal-sidebar{width:420px;height:100vh;background:linear-gradient(180deg,#0d0d0d,#0a0a0a);border-left:1px solid #1a1a1a;position:sticky;top:0;right:0;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#333 #0a0a0a;box-shadow:-4px 0 16px rgba(0,0,0,.5)}
+.modal-sidebar::-webkit-scrollbar{width:8px}
+.modal-sidebar::-webkit-scrollbar-track{background:#0a0a0a}
+.modal-sidebar::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+.modal-sidebar::-webkit-scrollbar-thumb:hover{background:#444}
+.sidebar-header{padding:20px;border-bottom:1px solid #1a1a1a;position:sticky;top:0;background:#0d0d0d;z-index:10;backdrop-filter:blur(8px)}
+.sidebar-header h4{color:var(--text);font-size:1.1rem;font-weight:800;margin-bottom:4px}
+.sidebar-header .ad-id{color:var(--muted);font-size:.75rem;font-family:monospace}
+.metrics-section{Padding:20px}
+.metrics-section h5{color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:16px;font-weight:800}
+.metric-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+.metric-card{background:linear-gradient(135deg,#141414,#0f0f0f);padding:14px;border-radius:10px;border:1px solid #1a1a1a;transition:transform .2s,border-color .2s}
+.metric-card:hover{transform:translateY(-2px);border-color:#242424}
+.metric-card .metric-label{font-size:.68rem;color:var(--muted-2);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:6px}
+.metric-card .metric-value{font-weight:900;font-size:1.2rem;color:var(--text)}
+.metric-card.highlight .metric-value{color:var(--accent)}
+.metric-card.success .metric-value{color:var(--success)}
+.metric-card.warning .metric-value{color:#ffb84d}
+.link-box{padding:20px;border-top:1px solid #1a1a1a}
+.link-box .link-input-wrapper{display:flex;gap:8px;margin-top:12px}
+.link-box input{flex:1;background:#0a0a0a;border:1px solid #1a1a1a;padding:12px;border-radius:8px;color:var(--accent);font-size:.85rem;transition:border-color .2s}
+.link-box input:focus{border-color:var(--accent);outline:none}
+.link-box button{background:var(--accent);color:#001018;border:0;padding:12px 16px;border-radius:8px;font-weight:800;cursor:pointer;transition:all .2s;white-space:nowrap}
+.link-box button:hover{transform:scale(1.05);background:#d9b3ff}
+.modal-close{position:fixed;top:20px;left:20px;width:48px;height:48px;border-radius:12px;background:rgba(0,0,0,.8);border:1px solid #222;color:var(--text);display:grid;place-items:center;cursor:pointer;z-index:130;font-size:1.5rem;transition:all .2s;backdrop-filter:blur(8px)}
+.modal-close:hover{background:rgba(255,255,255,.1);transform:scale(1.05) rotate(90deg);border-color:#333}
+@media(max-width:1200px){.modal-container{flex-direction:column}.modal-sidebar{width:100%;height:auto;max-height:50vh;position:relative;border-left:0;border-top:1px solid #1a1a1a}.video-wrapper{max-width:100%}}
+@media(max-width:768px){.search-box{max-width:100%}.sidebar{width:100%;right:-100%}.header{padding:12px;flex-wrap:wrap}.grid{grid-template-columns:1fr}.summary{grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}.modal-main{padding:10px}.modal-sidebar{max-height:60vh}.metric-row{grid-template-columns:1fr}}
+
+/* ---- Fixed analytics bar shown when modal is open ---- */
+.modal .fixed-analytics{
+  position:fixed;
+  top:20px;
+  left:50%;
+  transform:translateX(-50%);
+  width: min(calc(100% - 120px), 1100px);
+  max-width:1100px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04));
+  border:1px solid #1a1a1a;
+  padding:10px 14px;
+  border-radius:12px;
+  z-index:140;
+  display:flex;
+  gap:10px;
+  align-items:center;
+  box-shadow:0 10px 40px rgba(0,0,0,0.6);
+  pointer-events:auto;
+}
+.modal .fixed-analytics .fa-card{
+  background:#0e0e0e;
+  padding:8px 12px;
+  border-radius:10px;
+  border:1px solid #242424;
+  min-width:110px;
+  text-align:center;
+}
+.modal .fixed-analytics .fa-label{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.6px}
+.modal .fixed-analytics .fa-value{font-weight:800;margin-top:6px;font-size:1rem;color:var(--text)}
+@media (max-width:1200px){
+  .modal .fixed-analytics{ left:12px; transform:none; width:calc(100% - 24px); top:12px; }
+  .modal .fixed-analytics .fa-card{ min-width:80px; padding:6px 8px; }
+}
+
+/* ---- Instagram Reel style player ---- */
+.reel-container{display:flex;justify-content:center;align-items:flex-start;padding:18px}
+.reel-wrapper{width:100%;max-width:600px;aspect-ratio:9/16;margin:0 auto;position:relative;background:#000;border-radius:18px;overflow:hidden;box-shadow:0 18px 60px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.03)}
+.reel-wrapper iframe,.reel-wrapper video,.reel-wrapper img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border:0;display:block}
+.reel-wrapper::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0.06),rgba(0,0,0,0.18));pointer-events:none}
+.reel-controls{display:flex;justify-content:center;gap:12px;margin-top:10px;width:100%;max-width:600px;margin-left:auto;margin-right:auto}
+@media(max-width:900px){.reel-wrapper{max-width:420px;border-radius:14px}.reel-controls{max-width:420px;gap:8px}}
+</style>
+</head>
+<body>
+<div id="app">
+<header class="header">
+<div class="logo">Kenaz Ad Studio</div>
+
+<!-- global search (for searching across ad names/ids/accounts/permalinks) -->
+<div class="search-box" style="margin-right:12px">
+<input id="globalSearch" placeholder="Search ads by name, id, account, product, permalink..." aria-label="Search ads" />
+<button id="clearSearch" aria-label="Clear search">✕</button>
+</div>
+
+<div class="search-box" style="max-width:420px">
+<input id="accInput" placeholder="Campaign / Ad Account IDs (act_123, act_456) – press Enter or Search" aria-label="Campaign or Ad Account IDs">
+<button id="searchBtn" aria-label="Search Accounts">Search</button>
+</div>
+
+<div class="header-actions">
+<div class="status">
+<span class="dot" id="dot" aria-hidden="true"></span>
+<span id="statusTxt">Ready</span>
+</div>
+<button class="icon-btn" id="refreshBtn" title="Refresh" aria-label="Refresh data">↻</button>
+<button class="icon-btn" id="settingsBtn" title="Settings" aria-label="Open settings">⚙</button>
+<button id="soundToggle" class="icon-btn sound-toggle" title="Toggle sound" aria-pressed="false" aria-label="Toggle sound">🔊</button>
+<div class="sound-indicator" id="soundIndicator" aria-live="polite">Sound: Off</div>
+</div>
+</header>
+
+<div class="overlay" id="overlay" aria-hidden="true"></div>
+
+<aside class="sidebar" id="sidebar" role="dialog" aria-labelledby="settingsTitle" aria-modal="true">
+<h3 id="settingsTitle">Settings <button class="close" id="closeSidebar" aria-label="Close settings">×</button></h3>
+<div class="field">
+<label for="token">Access Token</label>
+<input type="password" id="token" placeholder="Graph API token (paste here to test)" autocomplete="off">
+<label style="display:flex;align-items:center;gap:8px;margin-top:8px">
+<input type="checkbox" id="rememberToken">
+<span style="color:var(--muted)">Remember token</span>
+</label>
+</div>
+<div class="field">
+<label for="accountIds">Campaign / Ad Account IDs</label>
+<textarea id="accountIds" placeholder="act_123456789&#10;act_987654321" rows="4"></textarea>
+<small>One per line or comma separated</small>
+</div>
+
+<!-- Manual permalinks textarea -->
+<div class="field">
+<label for="manualPermaps">Manual Permalinks (one per line)</label>
+<textarea id="manualPermaps" rows="5" placeholder="adId_or_name|https://www.instagram.com/p/DRPMTFfjBuL/#advertiser
+1234567890|https://www.instagram.com/p/DRPMTFfjBuL/#advertiser"></textarea>
+<small>Format: <code>adId_or_name|permalink</code>. Matches by ad id first, then ad name. Saved to localStorage.</small>
+</div>
+
+<div class="field">
+<label>Date Range</label>
+<div class="chips" role="group" aria-label="Date range presets">
+<button class="chip" data-d="7" aria-label="Last 7 days">7d</button>
+<button class="chip active" data-d="30" aria-label="Last 30 days">30d</button>
+<button class="chip" data-d="60" aria-label="Last 60 days">60d</button>
+<button class="chip" data-d="90" aria-label="Last 90 days">90d</button>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+<input type="date" id="since" aria-label="Start date">
+<input type="date" id="until" aria-label="End date">
+</div>
+</div>
+<div class="field">
+<label for="adStatus">Ad Status</label>
+<select id="adStatus">
+<option value="ACTIVE">Active Only</option>
+<option value="PAUSED">Paused Only</option>
+<option value="">All</option>
+</select>
+</div>
+<button class="btn btn-red" id="loadBtn">Load All Ads</button>
+<button class="btn btn-dark" id="exportBtn" disabled>Export Excel</button>
+</aside>
+
+<main class="main">
+<div class="toolbar" id="toolbar" style="display:none">
+<div class="tabs" id="tabs" role="tablist"></div>
+<div style="display:flex;gap:10px;align-items:center">
+<div class="sort-box">
+<select id="sortBy" aria-label="Sort ads by">
+<option value="spend-desc">Spend ↓</option>
+<option value="spend-asc">Spend ↑</option>
+<option value="roas-desc">ROAS ↓</option>
+<option value="roas-asc">ROAS ↑</option>
+<option value="cpc-asc">CPC ↑</option>
+<option value="cpc-desc">CPC ↓</option>
+<option value="purchases-desc">Purchases ↓</option>
+<option value="ctr-desc">CTR ↓</option>
+</select>
+</div>
+</div>
+</div>
+<div class="summary" id="summary" style="display:none" role="region" aria-label="Performance summary"></div>
+<div id="content">
+<div style="padding:60px 20px;text-align:center;color:var(--muted-2)">
+<h3 style="margin-bottom:8px">Enter Campaign / Ad Account IDs</h3>
+<p>Click Settings to configure and load your ads (Kenaz Perfumes)</p>
+</div>
+</div>
+</main>
+
+<div class="modal" id="modal" role="dialog" aria-modal="true">
+<button class="modal-close" id="closeModal" aria-label="Close modal">×</button>
+<div class="modal-container">
+<div class="modal-main">
+<div class="video-wrapper">
+<div class="video-content" id="videoContent"></div>
+</div>
+</div>
+<aside class="modal-sidebar">
+<div class="sidebar-header">
+<h4 id="modalAdName">Ad Details</h4>
+<div class="ad-id" id="modalAdId">ID: ---</div>
+</div>
+<div class="metrics-section">
+<h5>Performance Metrics</h5>
+<div id="metricsGrid"></div>
+<button id="aiInsightBtn" class="btn btn-dark" style="margin-top:16px;">Ask AI for insights</button>
+<div id="aiInsightBox" style="margin-top:10px; font-size:0.85rem; color:var(--muted-2); line-height:1.4;"></div>
+</div>
+<div class="link-box">
+<h5 style="color:var(--muted);font-size:.7rem;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:8px;font-weight:800">Share Link</h5>
+<div class="link-input-wrapper" id="linkWrapper"></div>
+</div>
+</aside>
+</div>
+</div>
+</div>
+
+<script>
+/*
+  Full JS logic.
+  - Requires a valid FB Graph API token and ad account IDs to fully function.
+  - Serve via http(s). Instagram embeds require publicly accessible posts.
+*/
+
+(function(){
+'use strict';
+
+/* ---------- CONFIG & STATE ---------- */
+const API_BASE = "https://kenaz-backend.onrender.com"; // AI endpoint optional - keep as is or change
+const CONFIG = {
+  API_VERSION: 'v21.0',
+  BATCH_SIZE: 25,
+  INSIGHTS_BATCH_SIZE: 50,
+  CREATIVE_CACHE_TTL_MS: 1000 * 60 * 60 * 24,
+  STORAGE_KEYS: {
+    TOKEN: 'kenaz_tk',
+    ACCOUNTS: 'kenaz_acc',
+    PERMAPS: 'kenaz_permmap',
+    CREATIVE_CACHE: 'kenaz_creative_cache'
+  },
+  AD_FIELDS: 'id,name,status,effective_status,creative{id,object_story_id,image_url,thumbnail_url,video_id,instagram_permalink_url,effective_instagram_story_id}',
+  INSIGHT_FIELDS: 'spend,impressions,reach,ctr,cpc,cpm,inline_link_clicks,actions,action_values,video_thruplay_watched_actions,video_p100_watched_actions'
+};
+
+const State = {
+  ads: [],
+  filtered: [],
+  products: new Set(),
+  accounts: new Set(),
+  controllers: [],
+  allowSound: false,
+  currentAd: null,
+  manualMap: {},
+};
+
+/* ---------- DOM helper ---------- */
+const DOM = {
+  cache: {},
+  get(id) { if (!this.cache[id]) this.cache[id] = document.getElementById(id); return this.cache[id]; },
+  getAll(selector) { return Array.from(document.querySelectorAll(selector)); }
+};
+
+/* ---------- Utils ---------- */
+const Utils = {
+  escape: s => String(s || '').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
+  formatNumberShort: n => n >= 1e6 ? (n/1e6).toFixed(1) + 'M' : n >= 1e3 ? (n/1e3).toFixed(1) + 'K' : Math.round(n || 0),
+  formatNumberLocale: n => { try { return new Intl.NumberFormat('en-IN').format(Math.round(n || 0)); } catch(e){ return String(n); } },
+  formatCurrency: v => { try { const num = Number(v || 0); return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(num); } catch (e) { return `₹${Number(v || 0).toFixed(2)}`; } },
+  formatCurrencyRounded: v => { try { const num = Number(v || 0); return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(Math.round(num)); } catch (e) { return `₹${Math.round(Number(v || 0))}`; } },
+  formatPercent: v => { try { return `${Number(v || 0).toFixed(2)}%`; } catch(e){ return String(v); } },
+  sum: arr => arr.reduce((s, x) => (+x || 0) + s, 0),
+  nowISO: () => new Date().toISOString().split('T')[0],
+  num: v => (+v) || 0,
+  getActionValue: (actions, type) => { if (!Array.isArray(actions)) return 0; return actions.filter(x => x.action_type === type).reduce((s, x) => (+x.value || 0) + s, 0); },
+  constructPermalink: (storyId) => { if (!storyId || typeof storyId !== 'string' || !storyId.includes('_')) return ''; const parts = storyId.split('_'); return parts.length >= 2 ? `https://www.facebook.com/${parts[0]}/posts/${parts[1]}` : ''; },
+  getProduct: (name) => { if (!name) return 'Other'; const parts = name.split('|').map(s => s.trim()).filter(Boolean); for (const p of parts) { if (/^(kz acc|sale|tof|ot|dt|advantage|reel|video|\d+-\d+|m\+f|m|f)$/i.test(p)) continue; if (p.length > 3) return p.split(' ').slice(0, 3).join(' '); } return 'Other'; },
+  getBestImage: (creative) => { if (!creative) return ''; const imgUrl = creative.image_url || creative.thumbnail_url || creative.full_picture || ''; if (imgUrl && imgUrl.includes('scontent')) return imgUrl.replace(/\/[ps]\d+x\d+\//g, '/'); return imgUrl; },
+  parseFbPostParts: (permalink) => {
+    try {
+      const u = new URL(permalink);
+      const path = u.pathname.replace(/^\//, '').split('/').filter(Boolean);
+      if (path.length >= 3 && (path[1] === 'posts' || path[1] === 'videos')) return { page: path[0], id: path[2] };
+      if (u.searchParams.has('story_fbid')) return { page: u.searchParams.get('id') || null, id: u.searchParams.get('story_fbid') };
+      const last = path[path.length - 1];
+      if (/^\d+$/.test(last)) return { page: path[0] || null, id: last };
+    } catch(e){}
+    return null;
+  }
+};
+
+/* ---------- API helpers ---------- */
+const API = {
+  async call(endpoint, params, token, signal) {
+    const url = new URL(`https://graph.facebook.com/${CONFIG.API_VERSION}/${endpoint}`);
+    Object.keys(params || {}).forEach(k => url.searchParams.set(k, params[k]));
+    if (token) url.searchParams.set('access_token', token);
+    const response = await fetch(url, { signal });
+    const json = await response.json();
+    if (json?.error) throw new Error(json.error.message || JSON.stringify(json.error));
+    return json;
+  },
+
+  async fetchAds(account, token, status, signal) {
+    let ads = [];
+    let url = `https://graph.facebook.com/${CONFIG.API_VERSION}/${account}/ads?fields=${encodeURIComponent(CONFIG.AD_FIELDS)}&limit=100&access_token=${token}`;
+    if (status) url += '&filtering=' + encodeURIComponent(JSON.stringify([{ field: 'effective_status', operator: 'IN', value: [status] }])); 
+    const processPage = async (pageUrl) => {
+      const response = await fetch(pageUrl, { signal });
+      const json = await response.json();
+      if (json?.error) throw new Error(json.error.message || JSON.stringify(json.error));
+      if (json.data) ads.push(...json.data.map(a => ({ ...a, account })));
+      if (json?.paging?.next) await processPage(json.paging.next);
+    };
+    await processPage(url);
+    return ads;
+  },
+
+  async fetchInsights(ids, since, until, token, signal) {
+    const results = {};
+    if (!ids || ids.length === 0) return results;
+
+    const runBatch = async (batchIds) => {
+      const batchRequests = batchIds.map(id => ({
+        method: 'GET',
+        relative_url: `${encodeURIComponent(id)}/insights?fields=${encodeURIComponent(CONFIG.INSIGHT_FIELDS)}&time_range=${encodeURIComponent(JSON.stringify({ since, until }))}`
+      }));
+      try {
+        const resp = await fetch(`https://graph.facebook.com/${CONFIG.API_VERSION}/?access_token=${token}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ batch: batchRequests }),
+          signal
+        });
+        const batchResults = await resp.json();
+        if (Array.isArray(batchResults)) {
+          batchResults.forEach((r, idx) => {
+            const id = batchIds[idx];
+            if (r && r.code === 200 && r.body) {
+              try {
+                const parsed = JSON.parse(r.body);
+                if (parsed.data && parsed.data[0]) results[id] = parsed.data[0];
+              } catch (e) { /* ignore parse error for this id */ }
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Insight batch failed:', e);
+      }
+    };
+
+    for (let i = 0; i < ids.length; i += CONFIG.INSIGHTS_BATCH_SIZE) {
+      const chunk = ids.slice(i, i + CONFIG.INSIGHTS_BATCH_SIZE);
+      UI.setStatus(`Fetching insights ${i + 1}-${Math.min(i + CONFIG.INSIGHTS_BATCH_SIZE, ids.length)} of ${ids.length}`, 'loading');
+      await runBatch(chunk);
+    }
+    return results;
+  },
+
+  async fetchPermalinksBatch(ads, token, signal) {
+    const results = {};
+    const creativeIds = ads.filter(ad => ad.creative?.id).map(ad => ad.creative.id);
+    if (creativeIds.length === 0) return results;
+
+    // batch fetch creative fields
+    for (let i = 0; i < creativeIds.length; i += CONFIG.BATCH_SIZE) {
+      const batch = creativeIds.slice(i, i + CONFIG.BATCH_SIZE);
+      const batchRequests = batch.map(creativeId => ({
+        method: 'GET',
+        relative_url: `${creativeId}?fields=instagram_permalink_url,effective_instagram_story_id,object_story_id,permalink_url,full_picture,attachments{media,subattachments,media_type,target},thumbnail_url,image_url,video_id`
+      }));
+      try {
+        const response = await fetch(`https://graph.facebook.com/${CONFIG.API_VERSION}/?access_token=${token}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ batch: batchRequests }),
+          signal
+        });
+        const batchResults = await response.json();
+        if (Array.isArray(batchResults)) {
+          batchResults.forEach((result, idx) => {
+            const creativeId = batch[idx];
+            if (result.code === 200 && result.body) {
+              try {
+                const data = JSON.parse(result.body);
+                results[creativeId] = {
+                  instagram_url: data.instagram_permalink_url || '',
+                  ig_story_id: data.effective_instagram_story_id || '',
+                  fb_story_id: data.object_story_id || '',
+                  permalink_url: data.permalink_url || '',
+                  image_url: data.image_url || '',
+                  full_picture: data.full_picture || '',
+                  thumbnail_url: data.thumbnail_url || '',
+                  video_id: data.video_id || ''
+                };
+              } catch (e) { console.warn(`Failed to parse creative ${creativeId}:`, e); }
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Batch creative fetch failed:', e);
+      }
+    }
+
+    // process story ids for permalink_url where possible
+    const fbStoryIds = ads.map(ad => ad.creative?.object_story_id).filter(id => id?.includes('_'));
+    for (let i = 0; i < fbStoryIds.length; i += CONFIG.BATCH_SIZE) {
+      const batch = fbStoryIds.slice(i, i + CONFIG.BATCH_SIZE);
+      const batchRequests = batch.map(storyId => ({ method: 'GET', relative_url: `${storyId}?fields=permalink_url` }));
+      try {
+        const response = await fetch(`https://graph.facebook.com/${CONFIG.API_VERSION}/?access_token=${token}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ batch: batchRequests }),
+          signal
+        });
+        const batchResults = await response.json();
+        if (Array.isArray(batchResults)) {
+          batchResults.forEach((result, idx) => {
+            const storyId = batch[idx];
+            if (result.code === 200 && result.body) {
+              try {
+                const data = JSON.parse(result.body);
+                if (data.permalink_url) results[storyId] = data.permalink_url;
+              } catch (e) {
+                results[storyId] = Utils.constructPermalink(storyId);
+              }
+            } else {
+              results[storyId] = Utils.constructPermalink(storyId);
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Batch FB permalink fetch failed:', e);
+      }
+    }
+
+    // try fill images & cache via oembed or direct html fetch if possible
+    const tryFillImages = async () => {
+      const cacheKey = CONFIG.STORAGE_KEYS.CREATIVE_CACHE;
+      let creativeCache = {};
+      try { creativeCache = JSON.parse(localStorage.getItem(cacheKey) || '{}'); } catch(e){ creativeCache = {}; }
+
+      const creativeToCheck = [];
+      ads.forEach(ad => {
+        const creativeId = ad.creative?.id;
+        const creativeData = creativeId ? (results[creativeId] || {}) : {};
+        const storyId = ad.creative?.object_story_id;
+        const permalinkFromBatch = creativeData.instagram_url || creativeData.permalink_url || results[storyId] || '';
+        if ((!creativeData.image_url && !creativeData.thumbnail_url && !creativeData.full_picture) && (permalinkFromBatch || storyId)) {
+          creativeToCheck.push({ ad, creativeId, storyId, permalinkFromBatch });
+        }
+      });
+
+      const concurrency = 6;
+      let idx = 0;
+      async function worker() {
+        while (idx < creativeToCheck.length) {
+          const i = idx++;
+          const item = creativeToCheck[i];
+          try {
+            if (item.creativeId && creativeCache[item.creativeId] && creativeCache[item.creativeId].ts && (Date.now() - creativeCache[item.creativeId].ts) < CONFIG.CREATIVE_CACHE_TTL_MS) {
+              const cached = creativeCache[item.creativeId];
+              results[item.creativeId] = results[item.creativeId] || {};
+              if (cached.image) results[item.creativeId].image_url = cached.image;
+              if (cached.oembed) results[item.creativeId].oembed_html = cached.oembed;
+              continue;
+            }
+
+            let imageFound = '';
+            let oembedHtml = '';
+            const tokenParam = token;
+            let permalink = item.permalinkFromBatch || (item.storyId ? Utils.constructPermalink(item.storyId) : '');
+            if (permalink) {
+              try {
+                const oembedUrl = `https://graph.facebook.com/${CONFIG.API_VERSION}/oembed_post?url=${encodeURIComponent(permalink)}&access_token=${encodeURIComponent(tokenParam)}`;
+                const r = await fetch(oembedUrl, { signal });
+                const j = await r.json();
+                if (j && j.thumbnail_url) imageFound = j.thumbnail_url;
+                if (j && j.html) oembedHtml = j.html;
+              } catch (e){ /* ignore */ }
+              if (!imageFound) {
+                const parts = Utils.parseFbPostParts(permalink);
+                if (parts && parts.id) {
+                  try {
+                    const url = new URL(`https://graph.facebook.com/${CONFIG.API_VERSION}/${parts.id}`);
+                    url.searchParams.set('fields', 'full_picture,attachments{media,subattachments,media_type,target},oembed_html');
+                    url.searchParams.set('access_token', tokenParam);
+                    const resp = await fetch(url.toString(), { signal });
+                    const json = await resp.json();
+                    if (!json.error) {
+                      if (json.full_picture) imageFound = json.full_picture;
+                      else if (json.attachments && json.attachments.data && json.attachments.data.length) {
+                        const att = json.attachments.data[0];
+                        if (att.media && att.media.image && att.media.image.src) imageFound = att.media.image.src;
+                        else if (att.subattachments && att.subattachments.data && att.subattachments.data[0] && att.subattachments.data[0].media && att.subattachments.data[0].media.image && att.subattachments.data[0].media.image.src) {
+                          imageFound = att.subattachments.data[0].media.image.src;
+                        }
+                      }
+                      if (json.oembed_html) oembedHtml = json.oembed_html;
+                    }
+                  } catch (e){ /* ignore */ }
+                } else {
+                  try {
+                    const rr = await fetch(permalink, { signal, credentials: 'omit' });
+                    const tx = await rr.text();
+                    const m2 = tx.match(/property=["']og:image["']\s*content=["']([^"']+)["']/i) || tx.match(/<meta[^>]+content=["']([^"']+)["'][^>]*property=["']og:image["']/i);
+                    if (m2 && m2[1]) imageFound = m2[1];
+                    const htmlMatch = tx.match(/<blockquote[\s\S]*?instagram\.com\/p\/[^>]*>[\s\S]*?<\/blockquote>/i);
+                    if (htmlMatch) oembedHtml = htmlMatch[0];
+                  } catch(e){}
+                }
+              }
+            }
+
+            if (imageFound && item.creativeId) {
+              results[item.creativeId] = results[item.creativeId] || {};
+              results[item.creativeId].image_url = imageFound;
+              results[item.creativeId].thumbnail_url = results[item.creativeId].thumbnail_url || imageFound;
+              results[item.creativeId].full_picture = results[item.creativeId].full_picture || imageFound;
+            }
+            if (oembedHtml && item.creativeId) {
+              results[item.creativeId] = results[item.creativeId] || {};
+              results[item.creativeId].oembed_html = oembedHtml;
+            }
+
+            if (item.creativeId && (imageFound || oembedHtml)) {
+              creativeCache[item.creativeId] = { image: imageFound || '', oembed: oembedHtml || '', ts: Date.now() };
+              if (Object.keys(creativeCache).length % 20 === 0) localStorage.setItem(cacheKey, JSON.stringify(creativeCache));
+            }
+          } catch (e) {
+            console.warn('worker error', e);
+          }
+        }
+      }
+
+      const workers = [];
+      for (let w=0; w<concurrency; w++) workers.push(worker());
+      await Promise.all(workers);
+
+      // prune expired cache entries and persist
+      const now = Date.now();
+      Object.keys(creativeCache).forEach(k => {
+        if (creativeCache[k].ts && (now - creativeCache[k].ts) > CONFIG.CREATIVE_CACHE_TTL_MS) delete creativeCache[k];
+      });
+      localStorage.setItem(cacheKey, JSON.stringify(creativeCache));
+    };
+
+    await tryFillImages();
+    return results;
+  },
+
+  async fetchVideoSource(videoId, token, signal){
+    if(!videoId) return '';
+    try{
+      const url = new URL(`https://graph.facebook.com/${CONFIG.API_VERSION}/${videoId}`);
+      url.searchParams.set('fields', 'source');
+      if (token) url.searchParams.set('access_token', token);
+      const r = await fetch(url.toString(), { signal });
+      const j = await r.json();
+      if (j && j.source) return j.source;
+    }catch(e){}
+    return '';
+  }
+}; // end API
+
+/* ---------- Small wrappers ---------- */
+async function graphGet(resourceId, params = {}, token, signal) {
+  try { return await API.call(resourceId, params, token, signal); } catch (e) { throw e; }
+}
+
+function convertStoryIdToFacebookPost(storyId){
+  try{
+    if(!storyId || typeof storyId !== 'string' || !storyId.includes('_')) return '';
+    const [pageId, postId] = storyId.split('_');
+    if(!pageId || !postId) return '';
+    return `https://www.facebook.com/${pageId}/posts/${postId}/`;
+  }catch(e){
+    return '';
+  }
+}
+
+async function fetchCreativeInfoSimple(creativeId, token, signal){
+  if(!creativeId) return { object_story_id: null, image_url: '', thumbnail_url: '', instagram_permalink_url: '' };
+  try{
+    const data = await graphGet(creativeId, { fields: 'object_story_id,image_url,thumbnail_url,instagram_permalink_url,permalink_url,full_picture' }, token, signal);
+    return {
+      object_story_id: data?.object_story_id || null,
+      image_url: data?.image_url || '',
+      thumbnail_url: data?.thumbnail_url || '',
+      instagram_permalink_url: data?.instagram_permalink_url || '',
+      permalink_url: data?.permalink_url || '',
+      full_picture: data?.full_picture || ''
+    };
+  }catch(e){
+    return { object_story_id: null, image_url: '', thumbnail_url: '', instagram_permalink_url: '' };
+  }
+}
+
+async function resolveImageLinkForCreative(creative, token, signal){
+  try{
+    if(!creative) return '';
+    if(creative.object_story_id){
+      const c = convertStoryIdToFacebookPost(creative.object_story_id);
+      if(c) return c;
+    }
+    if(creative.id){
+      const info = await fetchCreativeInfoSimple(creative.id, token, signal);
+      if(info.object_story_id){
+        const p = convertStoryIdToFacebookPost(info.object_story_id);
+        if(p) return p;
+      }
+      if(info.instagram_permalink_url) return info.instagram_permalink_url;
+      if(info.permalink_url) return info.permalink_url;
+      if(info.full_picture) return info.full_picture;
+      if(info.image_url) return info.image_url;
+      if(info.thumbnail_url) return info.thumbnail_url;
+    }
+    if(creative.instagram_permalink_url) return creative.instagram_permalink_url;
+    if(creative.image_url) return creative.image_url;
+    if(creative.thumbnail_url) return creative.thumbnail_url;
+    return '';
+  }catch(e){
+    return '';
+  }
+}
+
+/* ---------- Manual mapping helpers ---------- */
+function parseManualPermaps() {
+  const t = DOM.get('manualPermaps');
+  if (!t) return {};
+  const lines = t.value.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  const map = {};
+  lines.forEach(line => {
+    const idx = line.indexOf('|');
+    if (idx === -1) return;
+    const key = line.slice(0, idx).trim();
+    const url = line.slice(idx + 1).trim();
+    if (key && url) map[key] = url;
+  });
+  return map;
+}
+
+function extractIgShortcodeFromUrl(url) {
+  if (!url) return null;
+  try {
+    const u = url.split('?')[0];
+    const m = u.match(/instagram\.com\/p\/([^\/\?#]+)/i);
+    if (m) return m[1];
+    const r = u.match(/instagram\.com\/reel\/([^\/\?#]+)/i);
+    if (r) return r[1];
+    return null;
+  } catch (e) { return null; }
+}
+
+/* ---------- Choose preferred link ---------- */
+function choosePreferredLink(ad) {
+  const candidates = [];
+  if (ad.creative?.instagram_permalink_url) candidates.push({ url: ad.creative.instagram_permalink_url, source: 'creative.instagram' });
+  if (ad.creative?.instagram_url) candidates.push({ url: ad.creative.instagram_url, source: 'creative.instagram_url' });
+  if (ad.creative?.permalink_url) candidates.push({ url: ad.creative.permalink_url, source: 'creative.permalink' });
+  if (ad.permalink) candidates.push({ url: ad.permalink, source: 'ad.permalink' });
+  if (ad.bestLink) candidates.push({ url: ad.bestLink, source: 'ad.bestLink' });
+  if (ad.postUrl) candidates.push({ url: ad.postUrl, source: 'ad.postUrl' });
+
+  const mm = State.manualMap || {};
+  if (mm[ad.id]) return { url: mm[ad.id], source: 'manual', platform: /instagram\.com/i.test(mm[ad.id]) ? 'Instagram' : ( /facebook\.com/i.test(mm[ad.id]) ? 'Facebook' : 'Other' ) };
+  if (mm[ad.name]) return { url: mm[ad.name], source: 'manual', platform: /instagram\.com/i.test(mm[ad.name]) ? 'Instagram' : ( /facebook\.com/i.test(mm[ad.name]) ? 'Facebook' : 'Other' ) };
+
+  const ig = candidates.find(c => /instagram\.com/i.test(c.url));
+  if (ig) return { url: ig.url, source: ig.source, platform: 'Instagram' };
+
+  const fb = candidates.find(c => /facebook\.com/i.test(c.url));
+  if (fb) return { url: fb.url, source: fb.source, platform: 'Facebook' };
+
+  if (candidates.length) return { url: candidates[0].url, source: candidates[0].source, platform: /instagram\.com/i.test(candidates[0].url) ? 'Instagram' : 'Other' };
+  return { url: '', source: '', platform: '' };
+}
+
+/* ---------- UI helpers ---------- */
+const UI = {
+  setStatus(text, type = 'success') {
+    DOM.get('statusTxt').textContent = text;
+    const colors = { success: 'var(--success)', loading: '#ff9800', error: 'var(--danger)' };
+    DOM.get('dot').style.background = colors[type] || colors.success;
+  },
+  openSidebar() { DOM.get('sidebar').classList.add('open'); DOM.get('overlay').classList.add('show'); },
+  closeSidebar() { DOM.get('sidebar').classList.remove('open'); DOM.get('overlay').classList.remove('show'); },
+
+  showModal(adId) {
+    // Replaced below with async version
+    showModalEmbedded(adId);
+  },
+
+  closeModal() {
+    DOM.get('modal').classList.remove('show');
+    DOM.get('videoContent').innerHTML = '';
+    const fa = document.querySelector('.fixed-analytics');
+    if (fa) {
+      try { fa.parentElement && fa.parentElement.removeChild(fa); } catch(e) { fa.style.display = 'none'; }
+    }
+  },
+
+  createCardHTML(ad) {
+    const hasSpend = ad.spend > 0;
+    const roasText = hasSpend ? (ad.roas || 0).toFixed(2) : '0.00';
+    const chosen = choosePreferredLink(ad);
+    const shareLink = chosen.url || '';
+    const shareDisplay = shareLink ? Utils.escape(shareLink) : 'No link';
+    const permalinkBadge = ad.permalink ? `<span class="meta-tag" title="Permalink available">✓ Link</span>` : '';
+    const platformBadge = ad.platform === 'Instagram' ? `<span class="badge platform">📷 IG</span>` : '';
+    const isReel = ad.isReel || ad.platform === 'Instagram' || Boolean(ad.igShortcode);
+    let containerClass = 'media-container';
+    if (isReel) containerClass += ' reel';
+    let mediaHtml = '';
+
+    if (shareLink && /instagram\.com/i.test(shareLink)) {
+      const sc = extractIgShortcodeFromUrl(shareLink) || ad.igShortcode;
+      if (sc) {
+        mediaHtml = `
+          <div class="${containerClass} reel-container" data-ad-id="${Utils.escape(ad.id)}" role="button" tabindex="0" aria-label="View ${Utils.escape(ad.name)}">
+            <div class="reel-wrapper">
+              <iframe src="https://www.instagram.com/p/${encodeURIComponent(sc)}/embed" scrolling="no" frameborder="0" allowfullscreen title="${Utils.escape(ad.name)}" loading="lazy" style="width:100%;height:100%;border:0;display:block;"></iframe>
+            </div>
+            <div class="badges">
+            ${platformBadge}
+            <span class="badge roas">ROAS ${roasText}x</span>
+            <span class="badge spend">${Utils.formatCurrencyRounded(ad.spend || 0)}</span>
+            </div>
+            <div class="link-badge"><a href="${Utils.escape(shareLink)}" target="_blank" rel="noopener noreferrer">🔗 Open</a></div>
+          </div>
+        `;
+      } else {
+        if (ad.imageUrl) {
+          mediaHtml = `
+          <div class="${containerClass} loading" data-ad-id="${Utils.escape(ad.id)}" role="button" tabindex="0" aria-label="View ${Utils.escape(ad.name)}">
+          <img src="${Utils.escape(ad.imageUrl)}" alt="${Utils.escape(ad.name)}" loading="lazy" decoding="async" data-loaded="false" onload="this.dataset.loaded='true';this.parentElement.classList.remove('loading')" onerror="this.parentElement.classList.remove('loading');this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22%3E%3Crect fill=%22%23111%22 width=%22400%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2218%22%3EImage unavailable%3C/text%3E%3C/svg%3E'">
+          <div class="badges">
+          ${platformBadge}
+          <span class="badge roas">ROAS ${roasText}x</span>
+          <span class="badge spend">${Utils.formatCurrencyRounded(ad.spend || 0)}</span>
+          </div>
+          <div class="link-badge"><a href="${Utils.escape(shareLink)}" target="_blank" rel="noopener noreferrer">🔗 Open</a></div>
+          </div>
+          `;
+        } else {
+          mediaHtml = `<div class="${containerClass}"><div class="video-placeholder" aria-hidden="true"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 8H11V5s0-2 3-2 3 1.5 3 3.5V8h3v4h-3v8h-5v-8H7V8z" fill="#b88cff"/></svg><div style="font-size:.75rem;color:var(--muted-2);margin-top:8px">No Creative</div></div><div class="badges"><span class="badge roas">ROAS ${roasText}x</span><span class="badge spend">${Utils.formatCurrencyRounded(ad.spend || 0)}</span></div></div>`;
+        }
+      }
+    } else if (shareLink && /facebook\.com/i.test(shareLink)) {
+      const encodedUrl = encodeURIComponent(shareLink);
+      mediaHtml = `
+      <div class="${containerClass}" data-ad-id="${Utils.escape(ad.id)}" role="button" tabindex="0" aria-label="View ${Utils.escape(ad.name)}">
+      <iframe src="https://www.facebook.com/plugins/post.php?href=${encodedUrl}&show_text=true&width=500" scrolling="no" frameborder="0" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture; web-share" title="${Utils.escape(ad.name)}" loading="lazy" style="width:100%;height:100%;border:0;display:block;"></iframe>
+      <div class="badges">
+      <span class="badge roas">ROAS ${roasText}x</span>
+      <span class="badge spend">${Utils.formatCurrencyRounded(ad.spend || 0)}</span>
+      </div>
+      <div class="link-badge">
+      <a href="${Utils.escape(shareLink)}" title="Open permalink" target="_blank" rel="noopener noreferrer">🔗 Open</a>
+      </div>
+      </div>
+      `;
+    } else {
+      if (ad.imageUrl) {
+        const extLink = ad.bestLink || ad.permalink || '#';
+        mediaHtml = `
+        <div class="${containerClass} loading" data-ad-id="${Utils.escape(ad.id)}" role="button" tabindex="0" aria-label="View ${Utils.escape(ad.name)}">
+        <img src="${Utils.escape(ad.imageUrl)}" alt="${Utils.escape(ad.name)}" loading="lazy" decoding="async" data-loaded="false" onload="this.dataset.loaded='true';this.parentElement.classList.remove('loading')" onerror="this.parentElement.classList.remove('loading');this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22400%22%3E%3Crect fill=%22%23111%22 width=%22400%22 height=%22400%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 fill=%22%23666%22 font-size=%2218%22%3EImage unavailable%3C/text%3E%3C/svg%3E'">
+        <div class="badges">
+        <span class="badge roas">ROAS ${roasText}x</span>
+        <span class="badge spend">${Utils.formatCurrencyRounded(ad.spend || 0)}</span>
+        </div>
+        ${extLink && extLink !== '#' ? `<div class="link-badge"><a href="${Utils.escape(extLink)}" target="_blank" rel="noopener noreferrer">🔗 Open</a></div>` : ''}
+        </div>
+        `;
+      } else {
+        mediaHtml = `
+        <div class="${containerClass}" data-ad-id="${Utils.escape(ad.id)}">
+        <div class="video-placeholder" aria-hidden="true"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M7 8H11V5s0-2 3-2 3 1.5 3 3.5V8h3v4h-3v8h-5v-8H7V8z" fill="#b88cff"/></svg><div style="font-size:.75rem;color:var(--muted-2);margin-top:8px">No Creative</div></div>
+        <div class="badges"><span class="badge roas">ROAS ${roasText}x</span><span class="badge spend">${Utils.formatCurrencyRounded(ad.spend || 0)}</span></div>
+        </div>
+        `;
+      }
+    }
+
+    return `
+    <div class="card" data-ad-id="${Utils.escape(ad.id)}">
+    ${mediaHtml}
+    <div class="info">
+    <div class="ad-name" data-ad-id="${Utils.escape(ad.id)}">${Utils.escape(ad.name)}</div>
+    <div class="meta-info">
+    <span class="meta-tag">${Utils.escape(ad.product)}</span>
+    <span class="meta-tag">${Utils.escape(ad.status)}</span>
+    ${permalinkBadge}
+    </div>
+    <div class="metrics">
+    <div class="metric"><div class="label">CTR</div><div class="value">${Utils.formatPercent(ad.ctr || 0)}</div></div>
+    <div class="metric"><div class="label">CPC</div><div class="value">${Utils.formatCurrency(ad.cpc || 0)}</div></div>
+    </div>
+    <div style="margin-top:8px; display:flex; gap:8px; align-items:center; justify-content:space-between;">
+    <div style="font-weight:700; color:var(--muted); font-size:.82rem">${Utils.formatNumberLocale(ad.imp || 0)} imp</div>
+    <div style="font-weight:700; color:var(--muted); font-size:.82rem">${Utils.formatCurrency(ad.cpm || 0)} CPM</div>
+    </div>
+    <div class="link-section" style="margin-top:10px">
+    <div class="copy-link">
+    <input type="text" value="${shareDisplay}" readonly aria-label="Ad link">
+    <button class="copy-btn" aria-label="Copy link">Copy</button>
+    </div>
+    </div>
+    </div>
+    </div>
+    `;
+  },
+
+  renderCards() {
+    const content = DOM.get('content');
+    if (!State.filtered.length) {
+      content.innerHTML = `<div style="padding:60px 20px;text-align:center;color:var(--muted-2)"><h3 style="margin-bottom:8px">No ads found</h3><p>Try different filters</p></div>`;
+      return;
+    }
+    const fragment = document.createDocumentFragment();
+    const container = document.createElement('div');
+    container.className = 'grid';
+    const cardsHTML = State.filtered.map(ad => UI.createCardHTML(ad)).join('');
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = cardsHTML;
+    Array.from(tempDiv.children).forEach(child => container.appendChild(child));
+    fragment.appendChild(container);
+    content.innerHTML = '';
+    content.appendChild(fragment);
+  },
+
+  renderTabs() {
+    const tabs = DOM.get('tabs'); const fragment = document.createDocumentFragment();
+    const allTab = document.createElement('button'); allTab.className = 'tab active'; allTab.dataset.f = 'all'; allTab.textContent = `All (${State.ads.length})`; allTab.setAttribute('role','tab'); allTab.setAttribute('aria-selected','true'); fragment.appendChild(allTab);
+    if (State.accounts.size > 1) {
+      State.accounts.forEach(account => {
+        const count = State.ads.filter(ad => ad.account === account).length;
+        const tab = document.createElement('button');
+        tab.className = 'tab';
+        tab.dataset.f = `acc:${account}`;
+        tab.textContent = `${account.replace('act_', '').slice(0, 8)} (${count})`;
+        tab.setAttribute('role', 'tab');
+        tab.setAttribute('aria-selected', 'false');
+        fragment.appendChild(tab);
+      });
+    }
+    State.products.forEach(product => {
+      const count = State.ads.filter(ad => ad.product === product).length;
+      const tab = document.createElement('button');
+      tab.className = 'tab';
+      tab.dataset.f = `prod:${product}`;
+      tab.textContent = `${product} (${count})`;
+      tab.setAttribute('role', 'tab');
+      tab.setAttribute('aria-selected', 'false');
+      fragment.appendChild(tab);
+    });
+    tabs.innerHTML = '';
+    tabs.appendChild(fragment);
+  },
+
+  renderSummary() {
+    const summary = DOM.get('summary');
+    if (!State.filtered.length) { summary.style.display = 'none'; return; }
+    const totalSpend = Utils.sum(State.filtered.map(a => a.spend));
+    const totalRev = Utils.sum(State.filtered.map(a => a.rev));
+    const totalPurchases = Utils.sum(State.filtered.map(a => a.purchases));
+    const totalImpr = Utils.sum(State.filtered.map(a => a.imp));
+    const totalClicks = Utils.sum(State.filtered.map(a => a.clicks));
+    const avgRoas = totalSpend > 0 ? (totalRev / totalSpend).toFixed(2) : '0.00';
+    const avgCpc = totalClicks > 0 ? (totalSpend / totalClicks).toFixed(2) : '0.00';
+    const avgCpa = totalPurchases > 0 ? (totalSpend / totalPurchases).toFixed(2) : '0.00';
+    const adsWithPermalinks = State.filtered.filter(a => a.permalink || a.bestLink || State.manualMap[a.id] || State.manualMap[a.name]).length;
+    const permalinkPercent = State.filtered.length > 0 ? Math.round((adsWithPermalinks / State.filtered.length) * 100) : 0;
+    summary.innerHTML = `
+    <div class="sum-card"><div class="lbl">Spend</div><div class="val">${Utils.formatCurrency(totalSpend)}</div></div>
+    <div class="sum-card"><div class="lbl">Revenue</div><div class="val">${Utils.formatCurrency(totalRev)}</div></div>
+    <div class="sum-card"><div class="lbl">ROAS</div><div class="val" style="color:${avgRoas >= 2 ? 'var(--success)' : avgRoas >= 1 ? '#ffb84d' : '#ff4d4d'}">${avgRoas}x</div></div>
+    <div class="sum-card"><div class="lbl">Purchases</div><div class="val">${Utils.formatNumberLocale(totalPurchases)}</div></div>
+    <div class="sum-card"><div class="lbl">Avg CPC</div><div class="val">${Utils.formatCurrency(Number(avgCpc))}</div></div>
+    <div class="sum-card"><div class="lbl">CPA</div><div class="val">${Utils.formatCurrency(Number(avgCpa))}</div></div>
+    <div class="sum-card"><div class="lbl">Linked Posts</div><div class="val" style="color:${permalinkPercent >= 90 ? 'var(--success)' : permalinkPercent >= 70 ? '#ffb84d' : '#ff4d4d'}">${permalinkPercent}%</div></div>
+    `;
+    summary.style.display = 'grid';
+  }
+};
+
+/* ---------- Core: loadAds (fetch + process) ---------- */
+async function loadAds() {
+  // persist manual permaps
+  localStorage.setItem(CONFIG.STORAGE_KEYS.PERMAPS, DOM.get('manualPermaps')?.value || '');
+  State.manualMap = parseManualPermaps();
+
+  State.controllers.forEach(c => { try { c.abort(); } catch(e) {} });
+  State.controllers = [];
+  UI.setStatus('Loading...', 'loading');
+  DOM.get('loadBtn').disabled = true;
+  DOM.get('content').innerHTML = `<div style="padding:60px 20px;text-align:center"><div style="opacity:.3">⏳ Loading ads...</div></div>`;
+  State.ads = []; State.filtered = []; State.products.clear(); State.accounts.clear();
+  const token = DOM.get('token').value.trim();
+  if (!token) { alert('⚠️ Please enter your access token in Settings'); DOM.get('loadBtn').disabled = false; UI.setStatus('Ready'); return; }
+  if (DOM.get('rememberToken').checked) localStorage.setItem(CONFIG.STORAGE_KEYS.TOKEN, token);
+  const accounts = DOM.get('accountIds').value.split(/[\n,]/).map(s => s.trim()).filter(Boolean);
+  if (!accounts.length) { alert('⚠️ Please enter at least one campaign / ad account ID'); DOM.get('loadBtn').disabled = false; UI.setStatus('Ready'); return; }
+  localStorage.setItem(CONFIG.STORAGE_KEYS.ACCOUNTS, DOM.get('accountIds').value);
+  DOM.get('accInput').value = accounts.join(', ');
+  const since = DOM.get('since').value; const until = DOM.get('until').value; const status = DOM.get('adStatus').value;
+  const controller = new AbortController(); State.controllers.push(controller);
+
+  try {
+    const accountPromises = accounts.map(async account => {
+      State.accounts.add(account);
+      UI.setStatus(`Loading ads for ${account}...`, 'loading');
+      const accController = new AbortController(); State.controllers.push(accController);
+      const ads = await API.fetchAds(account, token, status, accController.signal);
+      if (!ads?.length) { console.log(`⚠️ No ads found for ${account}`); return; }
+      const adIds = ads.map(a => a.id);
+      UI.setStatus(`Fetching insights for ${account} (${ads.length} ads)...`, 'loading');
+      const insights = await API.fetchInsights(adIds, since, until, token, accController.signal);
+      UI.setStatus(`Fetching permalinks for ${account}...`, 'loading');
+      const permalinks = await API.fetchPermalinksBatch(ads, token, accController.signal);
+
+      // process creatives -> aggressive permalink resolve per ad
+      for (const ad of ads) {
+        const creativeId = ad.creative?.id;
+        const creativeData = (creativeId && permalinks[creativeId]) ? permalinks[creativeId] : {};
+        const storyId = ad.creative?.object_story_id;
+
+        let permalink = '';
+        let platform = 'Facebook';
+        let igShortcode = '';
+
+        if (creativeData && creativeData.permalink_url) {
+          permalink = creativeData.permalink_url;
+          if (/instagram\.com/i.test(permalink)) platform = 'Instagram';
+        }
+        if (!permalink && creativeData && (creativeData.instagram_url || creativeData.instagram_permalink_url)) {
+          permalink = creativeData.instagram_url || creativeData.instagram_permalink_url;
+          platform = 'Instagram';
+          const match = permalink.match(/instagram\.com\/p\/([^\/\?]+)/i);
+          if (match) igShortcode = match[1];
+        }
+        if (!permalink && permalinks && storyId && permalinks[storyId]) {
+          permalink = permalinks[storyId];
+          if (/instagram\.com/i.test(permalink)) platform = 'Instagram';
+        }
+        if (!permalink && ad.creative?.object_story_id) {
+          const constructed = Utils.constructPermalink(ad.creative.object_story_id);
+          if (constructed) permalink = constructed;
+        }
+
+        const manual = State.manualMap || {};
+        if (manual[ad.id]) permalink = manual[ad.id];
+        else if (manual[ad.name]) permalink = manual[ad.name];
+
+        if (permalink && /instagram\.com\/p\//i.test(permalink)) {
+          platform = 'Instagram';
+          const m = permalink.match(/instagram\.com\/p\/([^\/\?#]+)/i);
+          if (m) igShortcode = m[1];
+        }
+
+        let resolved = '';
+        try { resolved = await resolveImageLinkForCreative(ad.creative || {}, token, accController.signal); } catch(e) { resolved = ''; }
+
+        if (!permalink && resolved && /facebook\.com|instagram\.com/i.test(resolved)) {
+          permalink = resolved;
+          if (/instagram\.com/i.test(resolved)) {
+            platform = 'Instagram';
+            const mm = resolved.match(/instagram\.com\/p\/([^\/\?]+)/i);
+            if (mm) igShortcode = mm[1];
+          }
+        }
+
+        if (!permalink) {
+          const possibleImage = (creativeData && (creativeData.image_url || creativeData.full_picture || creativeData.thumbnail_url)) || (ad.creative && (ad.creative.image_url || ad.creative.thumbnail_url)) || '';
+          const shortcode = extractIgShortcodeFromUrl(possibleImage);
+          if (shortcode) {
+            permalink = `https://www.instagram.com/p/${shortcode}/#advertiser`;
+            platform = 'Instagram';
+            igShortcode = shortcode;
+            console.log('Auto constructed IG permalink from image URL for creative', creativeId || '(no id)', shortcode);
+          }
+        }
+
+        if (!permalink && resolved) {
+          creativeData.image_url = creativeData.image_url || resolved;
+          creativeData.thumbnail_url = creativeData.thumbnail_url || resolved;
+          creativeData.full_picture = creativeData.full_picture || resolved;
+        }
+
+        ad.permalink = permalink || '';
+        ad.platform = platform;
+        ad.igShortcode = igShortcode || '';
+
+        ad.creative = ad.creative || {};
+        if (creativeData.image_url) ad.creative.image_url = creativeData.image_url;
+        if (creativeData.thumbnail_url) ad.creative.thumbnail_url = creativeData.thumbnail_url;
+        if (creativeData.full_picture) ad.creative.full_picture = creativeData.full_picture;
+        if (creativeData.video_id) ad.creative.video_id = creativeData.video_id;
+        if (!ad.creative.image_url && creativeId && permalinks[creativeId] && permalinks[creativeId].image_url) {
+          ad.creative.image_url = permalinks[creativeId].image_url;
+        }
+      }
+
+      // process insights into State.ads
+      ads.forEach(ad => {
+        const m = insights[ad.id];
+        if (!m) return;
+        const getAction = (arr, type) => { if (!arr) return 0; const item = arr.find(x => x.action_type === type); return item ? (+item.value || 0) : 0; };
+        const spend = +m.spend || 0;
+        const imp = +m.impressions || 0;
+        const reach = +m.reach || 0;
+        const clicks = +m.inline_link_clicks || 0;
+        const purchases = getAction(m.actions, 'purchase') || getAction(m.actions, 'offsite_conversion.fb_pixel_purchase');
+        const rev = getAction(m.action_values, 'purchase') || 0;
+        const roas = spend > 0 ? (rev / spend) : 0;
+        const lpv = getAction(m.actions, 'landing_page_view');
+        const atc = getAction(m.actions, 'add_to_cart');
+        const ci = getAction(m.actions, 'initiate_checkout');
+        const ctr = imp > 0 ? (clicks / imp) * 100 : 0;
+        const cpm = imp ? (spend*1000/imp) : (m.cpm ? (+m.cpm) : 0);
+        const cpp = (spend && purchases>0) ? (spend/purchases) : 0;
+        const cpc = (spend && clicks) ? (spend/clicks) : (m.cpc ? (+m.cpc) : 0);
+        const v3sec = getAction(m.actions, 'video_view') || 0;
+        const thruplay = getAction(m.video_thruplay_watched_actions, 'video_view') || 0;
+        const p100 = getAction(m.video_p100_watched_actions, 'video_view') || 0;
+        const hookRate = imp>0 ? (v3sec/imp)*100 : 0;
+        const holdRate = imp>0 ? (thruplay/imp)*100 : 0;
+        const completionRate = imp>0 ? (p100/imp)*100 : 0;
+        const lc2lpv = clicks>0 ? (lpv/clicks)*100 : 0;
+        const lpv2atc = lpv>0 ? (atc/lpv)*100 : 0;
+        const atc2ci = atc>0 ? (ci/atc)*100 : 0;
+        const ci2order = ci>0 ? (purchases/ci)*100 : 0;
+        const product = Utils.getProduct(ad.name);
+        State.products.add(product);
+        const postUrl = Utils.constructPermalink(ad.creative?.object_story_id);
+        const bestLink = ad.permalink || postUrl;
+        const imageUrl = (ad.creative && (ad.creative.image_url || ad.creative.thumbnail_url || ad.creative.full_picture)) ? (ad.creative.image_url || ad.creative.thumbnail_url || ad.creative.full_picture) : Utils.getBestImage(ad.creative);
+        State.ads.push({
+          id: ad.id,
+          name: ad.name,
+          account: ad.account,
+          status: ad.effective_status,
+          creative: ad.creative,
+          product,
+          postUrl,
+          permalink: ad.permalink || '',
+          platform: ad.platform || 'Facebook',
+          igShortcode: ad.igShortcode || '',
+          bestLink: bestLink || '',
+          imageUrl: imageUrl || '',
+          spend,
+          rev,
+          roas,
+          ctr,
+          cpc,
+          cpm,
+          cpp,
+          imp,
+          clicks,
+          reach,
+          purchases,
+          lpv,
+          atc,
+          ci,
+          v3sec,
+          thruplay,
+          p100,
+          hookRate,
+          holdRate,
+          completionRate,
+          lc2lpv,
+          lpv2atc,
+          atc2ci,
+          ci2order,
+          isReel: (ad.permalink && ad.platform === 'Instagram') || (ad.creative && String(ad.name || '').toLowerCase().includes('reel'))
+        });
+      });
+    });
+
+    await Promise.all(accountPromises);
+
+    // diagnostic summary to console
+    const permalinkCount = State.ads.filter(a => a.permalink).length;
+    const igCount = State.ads.filter(a => a.platform === 'Instagram').length;
+    const withImages = State.ads.filter(a => a.imageUrl).length;
+
+    console.log(`✅ ${State.ads.length} ads loaded | ${permalinkCount} with permalinks | ${igCount} Instagram ads | ${withImages} with images`);
+    UI.setStatus(`${State.ads.length} ads loaded`);
+    State.filtered = State.ads.slice();
+    UI.renderTabs();
+    UI.renderSummary();
+    sortAndRender();
+    DOM.get('toolbar').style.display = 'flex';
+    DOM.get('exportBtn').disabled = !State.ads.length;
+
+  } catch (error) {
+    console.error('❌ Load error:', error);
+    DOM.get('content').innerHTML = `<div style="padding:60px 20px;text-align:center;color:var(--danger)"><h3>⚠️ Error Loading Ads</h3><p style="margin-top:10px;color:var(--muted)">${Utils.escape(error.message || error)}</p><button onclick="window.AppController.load()" style="margin-top:20px;padding:10px 20px;background:var(--accent);border:0;border-radius:8px;color:#000;font-weight:800;cursor:pointer">Retry</button></div>`;
+    UI.setStatus('Error', 'error');
+  } finally {
+    DOM.get('loadBtn').disabled = false;
+    State.controllers = State.controllers.filter(c => !c.signal.aborted);
+  }
+}
+
+/* ---------- sort / filter ---------- */
+function sortAndRender() {
+  const sort = DOM.get('sortBy').value;
+  const [field, dir] = sort.split('-');
+  State.filtered.sort((a, b) => {
+    const av = a[field] || 0;
+    const bv = b[field] || 0;
+    return dir === 'desc' ? bv - av : av - bv;
+  });
+  UI.renderCards();
+}
+
+function filterByTab(filter) {
+  if (filter === 'all') State.filtered = State.ads.slice();
+  else if (filter.startsWith('acc:')) State.filtered = State.ads.filter(a => a.account === filter.slice(4));
+  else if (filter.startsWith('prod:')) State.filtered = State.ads.filter(a => a.product === filter.slice(5));
+  UI.renderSummary(); sortAndRender();
+}
+
+/* ---------- export ---------- */
+function exportToExcel() {
+  const data = State.filtered.map(a => ({
+    'ad ID': a.id, 'AD name': a.name, 'AD Link': a.bestLink || '', 'STATUS': a.status, 'Video Type': a.platform || 'Facebook',
+    'Spend': a.spend ? a.spend.toFixed(2) : '0.00', 'Revenue': a.rev ? a.rev.toFixed(2) : '0.00', 'ROAS': a.roas ? a.roas.toFixed(2) : '0.00',
+    'CTR%': a.ctr ? a.ctr.toFixed(2) : '0.00', 'Imp': a.imp || 0, 'Link clicks': a.clicks || 0, 'CPM': a.cpm ? a.cpm.toFixed(2) : '0.00',
+    'Cost per Purchase': a.cpp ? a.cpp.toFixed(2) : '0.00', 'CPC': a.cpc ? a.cpc.toFixed(2) : '0.00', 'Purchases': a.purchases || 0, 'Reach': a.reach || 0,
+    '3 sec views': a.v3sec || 0, 'Thruplays': a.thruplay || 0, '100% views': a.p100 || 0,
+    'Hook rate%': a.hookRate ? a.hookRate.toFixed(2) : '0.00', 'Hold rate%': a.holdRate ? a.holdRate.toFixed(2) : '0.00',
+    'Completion rate%': a.completionRate ? a.completionRate.toFixed(2) : '0.00', 'Website LPV': a.lpv || 0, 'Adds to cart': a.atc || 0,
+    'LC to LPV %': a.lc2lpv ? a.lc2lpv.toFixed(2) : '0.00', 'LPV to ATC %': a.lpv2atc ? a.lpv2atc.toFixed(2) : '0.00',
+    'ATC to CI %': a.atc2ci ? a.atc2ci.toFixed(2) : '0.00', 'CI to Order %': a.ci2order ? a.ci2order.toFixed(2) : '0.00'
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Ads');
+  XLSX.writeFile(wb, `ads_report_${Utils.nowISO()}.xlsx`);
+}
+
+/* ---------- copy helper ---------- */
+function copyToClipboard(input) {
+  try {
+    input.select();
+    document.execCommand('copy');
+    const btn = input.nextElementSibling;
+    if (btn) { const orig = btn.textContent; btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = orig, 1600); }
+  } catch (e) { console.warn('Copy failed', e); }
+}
+
+/* ---------- showModal (robust, logs embed URL) ---------- */
+async function showModalEmbedded(adId) {
+  const ad = State.ads.find(a => a.id === adId);
+  if (!ad) { console.error('Ad not found:', adId); return; }
+  State.currentAd = ad;
+  const videoContent = DOM.get('videoContent'); videoContent.innerHTML = '';
+
+  const pref = choosePreferredLink(ad);
+  let chosenUrl = pref.url || ad.permalink || ad.bestLink || '';
+  if (!chosenUrl && ad.igShortcode) chosenUrl = `https://www.instagram.com/p/${ad.igShortcode}/`;
+  if (!chosenUrl && ad.creative && ad.creative.object_story_id) chosenUrl = convertStoryIdToFacebookPost(ad.creative.object_story_id);
+
+  const sc = extractIgShortcodeFromUrl(chosenUrl) || ad.igShortcode || '';
+  const isInstagram = /instagram\.com/i.test(chosenUrl) || ad.platform === 'Instagram' || Boolean(sc) || ad.isReel;
+
+  DOM.get('modalAdName').textContent = ad.name;
+  DOM.get('modalAdId').textContent = `ID ${ad.id}`;
+
+  // Show metrics (brief)
+  const roasClass = ad.roas >= 2 ? 'success' : ad.roas >= 1 ? 'warning' : '';
+  DOM.get('metricsGrid').innerHTML = `
+  <div class="metric-row">
+  <div class="metric-card"><div class="metric-label">Spend</div><div class="metric-value">${Utils.formatCurrency(ad.spend || 0)}</div></div>
+  <div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-value">${Utils.formatCurrency(ad.rev || 0)}</div></div>
+  </div>
+  <div class="metric-row">
+  <div class="metric-card ${roasClass}"><div class="metric-label">ROAS</div><div class="metric-value">${(ad.roas || 0).toFixed(2)}x</div></div>
+  <div class="metric-card"><div class="metric-label">Purchases</div><div class="metric-value">${Utils.formatNumberLocale(ad.purchases || 0)}</div></div>
+  </div>
+  <div class="metric-row">
+  <div class="metric-card"><div class="metric-label">Impressions</div><div class="metric-value">${Utils.formatNumberLocale(ad.imp)}</div></div>
+  <div class="metric-card"><div class="metric-label">Clicks</div><div class="metric-value">${Utils.formatNumberLocale(ad.clicks || 0)}</div></div>
+  </div>
+  `;
+
+  // build fixed analytics bar
+  (function createOrUpdateFixedAnalytics(ad) {
+    try {
+      let fa = document.querySelector('.fixed-analytics');
+      const spend = Utils.formatCurrency(ad.spend || 0);
+      const rev = Utils.formatCurrency(ad.rev || 0);
+      const roas = (ad.roas || 0).toFixed(2) + 'x';
+      const ctr = Utils.formatPercent(ad.ctr || 0);
+      const cpc = Utils.formatCurrency(ad.cpc || 0);
+      const imp = Utils.formatNumberShort(ad.imp || 0);
+
+      const html = `
+        <div class="fa-card"><div class="fa-label">Spend</div><div class="fa-value">${spend}</div></div>
+        <div class="fa-card"><div class="fa-label">Revenue</div><div class="fa-value">${rev}</div></div>
+        <div class="fa-card"><div class="fa-label">ROAS</div><div class="fa-value">${roas}</div></div>
+        <div class="fa-card"><div class="fa-label">CTR</div><div class="fa-value">${ctr}</div></div>
+        <div class="fa-card"><div class="fa-label">CPC</div><div class="fa-value">${cpc}</div></div>
+        <div class="fa-card" style="min-width:120px"><div class="fa-label">Impr</div><div class="fa-value">${imp}</div></div>
+        <div style="flex:1"></div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <a href="${Utils.escape(ad.bestLink || ad.permalink || '')}" target="_blank" rel="noopener noreferrer" style="text-decoration:none">
+            <button class="btn btn-dark" style="padding:8px 12px; border-radius:10px; font-weight:700;">Open Post</button>
+          </a>
+        </div>
+      `;
+
+      if (!fa) {
+        fa = document.createElement('div');
+        fa.className = 'fixed-analytics';
+        fa.innerHTML = html;
+        document.body.appendChild(fa);
+      } else {
+        fa.innerHTML = html;
+        fa.style.display = 'flex';
+      }
+    } catch(e) {
+      console.warn('Fixed analytics create/update failed', e);
+    }
+  })(ad);
+
+  console.log('[Modal] chosenUrl:', chosenUrl, 'igShortcode:', sc, 'isInstagram:', isInstagram);
+
+  // render media
+  try {
+    if (isInstagram && sc) {
+      const embedSrc = `https://www.instagram.com/p/${encodeURIComponent(sc)}/embed`;
+      const debugNote = document.createElement('div');
+      debugNote.style.color = 'var(--muted)'; debugNote.style.padding = '8px'; debugNote.style.textAlign = 'center';
+      debugNote.textContent = 'Embedding Instagram: ' + embedSrc;
+      videoContent.appendChild(debugNote);
+      const iframe = document.createElement('iframe');
+      iframe.src = embedSrc;
+      iframe.loading = 'lazy';
+      iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
+      iframe.referrerPolicy = 'no-referrer-when-downgrade';
+      iframe.style.width = '100%'; iframe.style.height = '100%'; iframe.style.border = '0';
+      videoContent.appendChild(iframe);
+      console.log('Inserted instagram iframe src=', embedSrc);
+    } else if (/facebook\.com/i.test(chosenUrl)) {
+      const fbSrc = `https://www.facebook.com/plugins/post.php?href=${encodeURIComponent(chosenUrl)}&show_text=true&width=800`;
+      const debugNote = document.createElement('div');
+      debugNote.style.color = 'var(--muted)'; debugNote.style.padding = '8px'; debugNote.style.textAlign = 'center';
+      debugNote.textContent = 'Embedding Facebook: ' + chosenUrl;
+      videoContent.appendChild(debugNote);
+      const iframe = document.createElement('iframe');
+      iframe.src = fbSrc; iframe.loading='lazy'; iframe.style.border='0';
+      iframe.allow='autoplay; encrypted-media; picture-in-picture; web-share';
+      iframe.style.width='100%'; iframe.style.height='100%';
+      videoContent.appendChild(iframe);
+      console.log('Inserted facebook iframe src=', fbSrc);
+    } else if (ad.imageUrl) {
+      const img = document.createElement('img');
+      img.src = ad.imageUrl; img.alt = ad.name; img.loading = 'lazy';
+      videoContent.appendChild(img);
+      console.log('Inserted image fallback:', ad.imageUrl);
+    } else {
+      videoContent.innerHTML = `<div style="padding:30px;color:var(--muted)">No embeddable media is available for this ad. Permalink: ${chosenUrl || 'none'}</div>`;
+      console.warn('No embedable media - chosenUrl=', chosenUrl);
+    }
+  } catch (e) {
+    console.error('Modal media render error', e);
+    videoContent.innerHTML = `<div style="padding:20px;color:var(--muted)">Failed to render media. Check console.</div>`;
+  }
+
+  DOM.get('modal').classList.add('show');
+}
+
+/* ---------- Event binding ---------- */
+function initEventListeners() {
+  DOM.get('settingsBtn').onclick = UI.openSidebar;
+  DOM.get('closeSidebar').onclick = UI.closeSidebar;
+  DOM.get('overlay').onclick = UI.closeSidebar;
+  DOM.get('loadBtn').onclick = loadAds;
+  DOM.get('searchBtn').onclick = () => { DOM.get('accountIds').value = DOM.get('accInput').value.split(',').map(s => s.trim()).filter(Boolean).join('\n'); loadAds(); };
+  DOM.get('accInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') { DOM.get('accountIds').value = DOM.get('accInput').value.split(',').map(s => s.trim()).filter(Boolean).join('\n'); loadAds(); } });
+  DOM.get('refreshBtn').onclick = () => { if (State.ads.length) loadAds(); };
+  DOM.getAll('.chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      DOM.getAll('.chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const days = chip.dataset.d;
+      const d = new Date();
+      DOM.get('since').value = new Date(d - days * 86400000).toISOString().split('T')[0];
+      DOM.get('until').value = Utils.nowISO();
+    });
+  });
+  DOM.get('sortBy').onchange = sortAndRender;
+  DOM.get('exportBtn').onclick = exportToExcel;
+  DOM.get('closeModal').onclick = UI.closeModal;
+  DOM.get('soundToggle').addEventListener('click', () => { State.allowSound = !State.allowSound; DOM.get('soundToggle').classList.toggle('active', State.allowSound); DOM.get('soundToggle').setAttribute('aria-pressed', String(State.allowSound)); DOM.get('soundIndicator').textContent = 'Sound: ' + (State.allowSound ? 'On' : 'Off'); });
+
+  document.addEventListener('click', (e) => {
+    const copyBtn = e.target.closest('.copy-btn');
+    if (copyBtn) { e.stopPropagation(); const input = copyBtn.previousElementSibling; if (input?.select) copyToClipboard(input); return; }
+    const adName = e.target.closest('.ad-name');
+    if (adName) { e.stopPropagation(); const id = adName.dataset.adId; if (id) UI.showModal(id); return; }
+    const wrapper = e.target.closest('.media-container');
+    if (wrapper && !e.target.closest('.copy-link') && !e.target.closest('iframe') && !e.target.closest('.link-badge')) {
+      const id = wrapper.dataset.adId || wrapper.closest('.card')?.dataset.adId;
+      if (id) UI.showModal(id);
+      return;
+    }
+    const tab = e.target.closest('.tab');
+    if (tab) { DOM.getAll('.tab').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); }); tab.classList.add('active'); tab.setAttribute('aria-selected', 'true'); filterByTab(tab.dataset.f); }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (DOM.get('modal').classList.contains('show')) UI.closeModal();
+      else if (DOM.get('sidebar').classList.contains('open')) UI.closeSidebar();
+    }
+    if (e.key === 'Enter') {
+      const wrapper = document.activeElement.closest('.media-container');
+      if (wrapper) { const id = wrapper.dataset.adId || wrapper.closest('.card')?.dataset.adId; if (id) UI.showModal(id); }
+    }
+  });
+
+  // search filter
+  DOM.get('globalSearch').addEventListener('input', (e) => {
+    const q = (e.target.value || '').trim().toLowerCase();
+    if (!q) { State.filtered = State.ads.slice(); UI.renderSummary(); sortAndRender(); return; }
+    State.filtered = State.ads.filter(a => {
+      return String(a.name || '').toLowerCase().includes(q)
+        || String(a.id || '').toLowerCase().includes(q)
+        || String(a.account || '').toLowerCase().includes(q)
+        || String(a.product || '').toLowerCase().includes(q)
+        || String(a.permalink || '').toLowerCase().includes(q)
+        || String(a.bestLink || '').toLowerCase().includes(q);
+    });
+    UI.renderSummary(); sortAndRender();
+  });
+  DOM.get('clearSearch').addEventListener('click', () => { DOM.get('globalSearch').value=''; DOM.get('globalSearch').dispatchEvent(new Event('input')); });
+
+  // AI insight (optional)
+  const aiBtn = DOM.get("aiInsightBtn");
+  const aiBox = DOM.get("aiInsightBox");
+  if (aiBtn && aiBox) {
+    aiBtn.addEventListener("click", async () => {
+      const ad = State.currentAd;
+      if (!ad) { aiBox.textContent = "No ad selected."; return; }
+      aiBox.textContent = "Thinking with AI…";
+      const payload = { ad_name: ad.name, product: ad.product || "", platform: ad.platform || "", spend: ad.spend || 0, revenue: ad.rev || 0, roas: ad.roas || 0, ctr: ad.ctr || 0, cpc: ad.cpc || 0, hook_rate: ad.hookRate || 0, hold_rate: ad.holdRate || 0, completion_rate: ad.completionRate || 0 };
+      try {
+        const res = await fetch(`${API_BASE}/api/kenaz-llm-insight`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        if (!res.ok) {
+          const contentType = res.headers.get("content-type") || "";
+          let errText = res.statusText;
+          try {
+            if (contentType.includes("application/json")) { const errJson = await res.json(); errText = errJson.detail || JSON.stringify(errJson); } else { errText = await res.text(); }
+          } catch (e) {}
+          aiBox.textContent = "AI error: " + (errText || res.statusText);
+          console.error("AI API error:", res.status, errText);
+          return;
+        }
+        const data = await res.json();
+        const suggestions = (data.suggestions || []).map((s) => `- ${s}`).join("<br>");
+        aiBox.innerHTML = `<div style="font-weight:700;margin-bottom:4px;">Insight</div><div style="margin-bottom:6px;">${data.insight || ""}</div>` + (suggestions ? `<div style="font-weight:700;margin-bottom:4px;">Suggestions</div><div>${suggestions}</div>` : "");
+      } catch (e) {
+        aiBox.textContent = "AI request failed. Check server.";
+        console.error("Fetch error to AI endpoint:", e);
+      }
+    });
+  }
+}
+
+/* ---------- Init ---------- */
+function init() {
+  const today = new Date();
+  DOM.get('since').value = new Date(today - 30 * 86400000).toISOString().split('T')[0];
+  DOM.get('until').value = Utils.nowISO();
+  const savedToken = localStorage.getItem(CONFIG.STORAGE_KEYS.TOKEN);
+  if (savedToken) { DOM.get('token').value = savedToken; DOM.get('rememberToken').checked = true; }
+  const savedAccounts = localStorage.getItem(CONFIG.STORAGE_KEYS.ACCOUNTS);
+  if (savedAccounts) { DOM.get('accountIds').value = savedAccounts; DOM.get('accInput').value = savedAccounts.split('\n').join(', '); }
+  const savedPermaps = localStorage.getItem(CONFIG.STORAGE_KEYS.PERMAPS);
+  if (savedPermaps && DOM.get('manualPermaps')) DOM.get('manualPermaps').value = savedPermaps;
+  State.manualMap = parseManualPermaps();
+  initEventListeners();
+  DOM.get('soundIndicator').textContent = 'Sound: ' + (State.allowSound ? 'On' : 'Off');
+}
+
+window.AppController = { load: loadAds, showModal: UI.showModal };
+init();
+
+})(); // end IIFE
+</script>
+</body>
+</html>
