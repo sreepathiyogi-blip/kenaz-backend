@@ -14,7 +14,7 @@ app = Flask(__name__)
 CORS(app)
 
 # Perplexity API Configuration
-PERPLEXITY_API_KEY = os.getenv('PERPLEXITY_API_KEY', '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')
+PERPLEXITY_API_KEY = os.getenv('PERPLEXITY_API_KEY')
 PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions'
 
 def call_perplexity(prompt, system_message="You are an expert Facebook ads analyst."):
@@ -454,3 +454,4 @@ if __name__ == '__main__':
         debug=False,
         threaded=True
     )
+
