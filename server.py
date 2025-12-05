@@ -10,26 +10,15 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Configure CORS to allow all origins
-CORS(app, resources={
-    r"/*": {
-        "origins": "*",
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"],
-        "supports_credentials": False,
-        "max_age": 3600
-    }
-})
+# FIXED: Simplified CORS - allow all origins
+CORS(app)
 
 # Perplexity API Configuration
 PERPLEXITY_API_KEY = os.getenv('PERPLEXITY_API_KEY', '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')
 PERPLEXITY_API_URL = 'https://api.perplexity.ai/chat/completions'
 
 def call_perplexity(prompt, system_message="You are an expert Facebook ads analyst."):
-    """
-    Helper function to call Perplexity API
-    Returns the AI response or None on failure
-    """
+    """Helper function to call Perplexity API"""
     try:
         if not PERPLEXITY_API_KEY or PERPLEXITY_API_KEY == '':
             logger.error("PERPLEXITY_API_KEY is not set!")
@@ -52,7 +41,7 @@ def call_perplexity(prompt, system_message="You are an expert Facebook ads analy
                 'temperature': 0.7,
                 'max_tokens': 1000
             },
-            timeout=30
+            timeout=60  # FIXED: Increased timeout to 60 seconds
         )
         
         logger.info(f"Perplexity API Status Code: {response.status_code}")
@@ -76,13 +65,9 @@ def call_perplexity(prompt, system_message="You are an expert Facebook ads analy
         logger.error(f"Unexpected error in call_perplexity: {e}")
         return None
 
-# ============================================================================
-# ROUTES
-# ============================================================================
-
 @app.route('/', methods=['GET'])
 def home():
-    """Homepage route - shows service info"""
+    """Homepage route"""
     return jsonify({
         "service": "Kenaz AI Backend",
         "status": "running",
@@ -110,16 +95,9 @@ def health():
         "message": "Server is running properly" if api_key_set else "Warning: API key not configured"
     }), 200
 
-# ============================================================================
-# AI ANALYSIS ENDPOINTS
-# ============================================================================
-
-@app.route('/api/ai-insights', methods=['POST', 'OPTIONS'])
+@app.route('/api/ai-insights', methods=['POST'])
 def ai_insights():
     """Individual Ad Analysis"""
-    if request.method == 'OPTIONS':
-        return '', 204
-    
     try:
         logger.info("Received request for ai-insights")
         data = request.json
@@ -163,12 +141,9 @@ Keep it under 200 words. Be direct and specific."""
         logger.error(f"Error in ai_insights: {e}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/api/gender-analysis', methods=['POST', 'OPTIONS'])
+@app.route('/api/gender-analysis', methods=['POST'])
 def gender_analysis():
     """Gender Targeting Analysis"""
-    if request.method == 'OPTIONS':
-        return '', 204
-    
     try:
         logger.info("Received request for gender-analysis")
         data = request.json
@@ -181,7 +156,6 @@ def gender_analysis():
         if not ads:
             return jsonify({'error': 'No ads provided'}), 400
         
-        # Build ad list summary (limit to first 20)
         ad_summary = "\n".join([
             f"- {ad.get('name', 'N/A')} | Spend: ₹{ad.get('spend', 0):,.0f} | ROAS: {ad.get('roas', 0):.2f}x | Purchases: {ad.get('purchases', 0)}"
             for ad in ads[:20]
@@ -213,12 +187,9 @@ Keep analysis under 250 words. Be specific and actionable."""
         logger.error(f"Error in gender_analysis: {e}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/api/product-analysis', methods=['POST', 'OPTIONS'])
+@app.route('/api/product-analysis', methods=['POST'])
 def product_analysis():
     """Product Performance Analysis"""
-    if request.method == 'OPTIONS':
-        return '', 204
-    
     try:
         logger.info("Received request for product-analysis")
         data = request.json
@@ -231,7 +202,6 @@ def product_analysis():
         if not ads:
             return jsonify({'error': 'No ads provided'}), 400
         
-        # Build product performance summary (limit to 25)
         product_summary = "\n".join([
             f"- Product: {ad.get('product', 'Unknown')} | Ad: {ad.get('name', 'N/A')} | Spend: ₹{ad.get('spend', 0):,.0f} | ROAS: {ad.get('roas', 0):.2f}x"
             for ad in ads[:25]
@@ -264,12 +234,9 @@ Keep it under 250 words. Focus on actionable insights."""
         logger.error(f"Error in product_analysis: {e}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/api/creative-analysis', methods=['POST', 'OPTIONS'])
+@app.route('/api/creative-analysis', methods=['POST'])
 def creative_analysis():
     """Creative Pattern Analysis"""
-    if request.method == 'OPTIONS':
-        return '', 204
-    
     try:
         logger.info("Received request for creative-analysis")
         data = request.json
@@ -282,7 +249,6 @@ def creative_analysis():
         if not ads:
             return jsonify({'error': 'No ads provided'}), 400
         
-        # Analyze top performers (limit to 15)
         ad_summary = "\n".join([
             f"- {ad.get('name', 'N/A')} | ROAS: {ad.get('roas', 0):.2f}x | CTR: {ad.get('ctr', 0):.2f}% | Purchases: {ad.get('purchases', 0)}"
             for ad in ads[:15]
@@ -315,12 +281,9 @@ Keep it under 250 words. Be specific about what to test next."""
         logger.error(f"Error in creative_analysis: {e}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/api/budget-optimization', methods=['POST', 'OPTIONS'])
+@app.route('/api/budget-optimization', methods=['POST'])
 def budget_optimization():
     """Budget Allocation Optimization"""
-    if request.method == 'OPTIONS':
-        return '', 204
-    
     try:
         logger.info("Received request for budget-optimization")
         data = request.json
@@ -334,7 +297,6 @@ def budget_optimization():
         if not ads:
             return jsonify({'error': 'No ads provided'}), 400
         
-        # Build spending summary (limit to 20)
         spend_summary = "\n".join([
             f"- {ad.get('name', 'N/A')} | Current: ₹{ad.get('spend', 0):,.0f} | ROAS: {ad.get('roas', 0):.2f}x | CTR: {ad.get('ctr', 0):.2f}%"
             for ad in ads[:20]
@@ -369,12 +331,9 @@ Keep it under 250 words. Give specific numbers."""
         logger.error(f"Error in budget_optimization: {e}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/api/audience-analysis', methods=['POST', 'OPTIONS'])
+@app.route('/api/audience-analysis', methods=['POST'])
 def audience_analysis():
     """Audience Targeting Analysis"""
-    if request.method == 'OPTIONS':
-        return '', 204
-    
     try:
         logger.info("Received request for audience-analysis")
         data = request.json
@@ -387,7 +346,6 @@ def audience_analysis():
         if not ads:
             return jsonify({'error': 'No ads provided'}), 400
         
-        # Build summary (limit to 25)
         ad_summary = "\n".join([
             f"- {ad.get('name', 'N/A')} | ROAS: {ad.get('roas', 0):.2f}x | Spend: ₹{ad.get('spend', 0):,.0f}"
             for ad in ads[:25]
@@ -420,12 +378,9 @@ Keep it under 250 words. Focus on Indian market insights."""
         logger.error(f"Error in audience_analysis: {e}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-@app.route('/api/campaign-report', methods=['POST', 'OPTIONS'])
+@app.route('/api/campaign-report', methods=['POST'])
 def campaign_report():
     """Comprehensive Campaign Report"""
-    if request.method == 'OPTIONS':
-        return '', 204
-    
     try:
         logger.info("Received request for campaign-report")
         data = request.json
@@ -439,7 +394,6 @@ def campaign_report():
         if not ads:
             return jsonify({'error': 'No ads provided'}), 400
         
-        # Calculate totals
         total_spend = sum(ad.get('spend', 0) for ad in ads)
         total_revenue = sum(ad.get('revenue', 0) for ad in ads)
         total_purchases = sum(ad.get('purchases', 0) for ad in ads)
@@ -477,10 +431,6 @@ Keep it under 300 words. Be executive-level concise."""
         logger.error(f"Error in campaign_report: {e}")
         return jsonify({'error': f'Server error: {str(e)}'}), 500
 
-# ============================================================================
-# ERROR HANDLERS
-# ============================================================================
-
 @app.errorhandler(404)
 def not_found(error):
     return jsonify({'error': 'Endpoint not found'}), 404
@@ -488,14 +438,6 @@ def not_found(error):
 @app.errorhandler(500)
 def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
-
-@app.errorhandler(405)
-def method_not_allowed(error):
-    return jsonify({'error': 'Method not allowed'}), 405
-
-# ============================================================================
-# MAIN
-# ============================================================================
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))
@@ -512,4 +454,3 @@ if __name__ == '__main__':
         debug=False,
         threaded=True
     )
-
